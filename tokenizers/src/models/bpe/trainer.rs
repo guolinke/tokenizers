@@ -516,7 +516,7 @@ impl BpeTrainer {
 
             // Introduce new formed pairs
             for ((pair, change), iw) in changes {
-                let count = change * counts[iw] as i64;
+                let count = (change is i64) * (counts[iw] as i64);
                 pair_counts
                     .entry(pair)
                     .and_modify(|c| *c += count)
