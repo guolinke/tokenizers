@@ -350,7 +350,7 @@ impl BpeTrainer {
         words: &[Word],
         counts: &[u64],
         p: &Option<ProgressBar>,
-    ) -> (HashMap<Pair, i32>, HashMap<Pair, HashSet<usize>>) {
+    ) -> (HashMap<Pair, i64>, HashMap<Pair, HashSet<usize>>) {
         words
             .maybe_par_iter()
             .enumerate()
@@ -378,7 +378,7 @@ impl BpeTrainer {
                             h.insert(i);
                             h
                         });
-                    *pair_counts.get_mut(&cur_pair).unwrap() += count as i32;
+                    *pair_counts.get_mut(&cur_pair).unwrap() += count as i64;
                 }
 
                 if let Some(p) = &p {
@@ -516,7 +516,7 @@ impl BpeTrainer {
 
             // Introduce new formed pairs
             for ((pair, change), iw) in changes {
-                let count = change * counts[iw] as i32;
+                let count = change * counts[iw] as i64;
                 pair_counts
                     .entry(pair)
                     .and_modify(|c| *c += count)
