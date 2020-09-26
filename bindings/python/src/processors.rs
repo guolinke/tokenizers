@@ -51,7 +51,7 @@ pub struct BertProcessing {}
 #[pymethods]
 impl BertProcessing {
     #[new]
-    fn new(sep: (String, u32), cls: (String, u32)) -> PyResult<(Self, PostProcessor)> {
+    fn new(sep: (String, u64), cls: (String, u64)) -> PyResult<(Self, PostProcessor)> {
         Ok((
             BertProcessing {},
             PostProcessor {
@@ -74,8 +74,8 @@ impl RobertaProcessing {
     #[new]
     #[args(trim_offsets = true, add_prefix_space = true)]
     fn new(
-        sep: (String, u32),
-        cls: (String, u32),
+        sep: (String, u64),
+        cls: (String, u64),
         trim_offsets: bool,
         add_prefix_space: bool,
     ) -> PyResult<(Self, PostProcessor)> {

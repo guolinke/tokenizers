@@ -127,7 +127,7 @@ impl std::cmp::PartialEq for AddedToken {
 }
 impl std::cmp::Eq for AddedToken {}
 
-type MatchingSet = (regex::RegexSet, Vec<u32>);
+type MatchingSet = (regex::RegexSet, Vec<u64>);
 
 ///
 /// A vocabulary built on top of the Model
@@ -147,10 +147,10 @@ type MatchingSet = (regex::RegexSet, Vec<u32>);
 pub(super) struct AddedVocabulary {
     /// Contains the mapping from String (token content) to ID. This map contains both special
     /// tokens and classic added tokens that were added to the this vocabulary.
-    added_tokens_map: HashMap<String, u32>,
+    added_tokens_map: HashMap<String, u64>,
     /// Contains the mapping from ID to AddedToken for all the added tokens, both special
     /// and classic.
-    added_tokens_map_r: HashMap<u32, AddedToken>,
+    added_tokens_map_r: HashMap<u64, AddedToken>,
 
     /// Contains only the classic AddedToken, in the specific order the user gave them.
     added_tokens: Vec<AddedToken>,
@@ -186,12 +186,12 @@ impl AddedVocabulary {
     }
 
     /// Get the additional vocabulary
-    pub fn get_vocab(&self) -> &HashMap<String, u32> {
+    pub fn get_vocab(&self) -> &HashMap<String, u64> {
         &self.added_tokens_map
     }
 
     /// Get the id matching one of our token if it exists
-    pub fn token_to_id(&self, token: &str, model: &dyn Model) -> Option<u32> {
+    pub fn token_to_id(&self, token: &str, model: &dyn Model) -> Option<u64> {
         self.added_tokens_map
             .get(token)
             .copied()
@@ -199,7 +199,7 @@ impl AddedVocabulary {
     }
 
     /// Get the token matching the given id if it exists
-    pub fn id_to_token<'s>(&'s self, id: u32, model: &'s dyn Model) -> Option<&'s str> {
+    pub fn id_to_token<'s>(&'s self, id: u64, model: &'s dyn Model) -> Option<&'s str> {
         self.added_tokens_map_r
             .get(&id)
             .map(|t| t.content.as_ref())
@@ -246,7 +246,7 @@ impl AddedVocabulary {
                 ignored += 1;
                 id
             } else {
-                let new_id = (model.get_vocab_size() + self.added_tokens_map.len()) as u32;
+                let new_id = (model.get_vocab_size() + self.added_tokens_map.len()) as u64;
                 self.added_tokens_map.insert(token.content.clone(), new_id);
 
                 if !self.special_tokens_set.contains(&token.content) {
@@ -274,7 +274,7 @@ impl AddedVocabulary {
     /// We keep two different RegexSet, one that will take care of matching against the
     /// non-normalized string, and one matching against the normalized one.
     fn refresh_added_tokens(&mut self, model: &dyn Model, normalizer: Option<&dyn Normalizer>) {
-        type TupleTokenId<'a> = (&'a AddedToken, u32);
+        type TupleTokenId<'a> = (&'a AddedToken, u64);
         let (normalized, non_normalized): (Vec<TupleTokenId>, Vec<TupleTokenId>) = self
             .special_tokens
             .iter()
@@ -288,13 +288,13 @@ impl AddedVocabulary {
             })
             .partition(|(token, _)| token.normalized);
 
-        let (tokens, ids): (Vec<&AddedToken>, Vec<u32>) = non_normalized.into_iter().unzip();
+        let (tokens, ids): (Vec<&AddedToken>, Vec<u64>) = non_normalized.into_iter().unzip();
         self.split_re = (
             regex::RegexSet::new(tokens.iter().map(|t| t.get_pattern(normalizer))).unwrap(),
             ids,
         );
 
-        let (tokens, ids): (Vec<&AddedToken>, Vec<u32>) = normalized.into_iter().unzip();
+        let (tokens, ids): (Vec<&AddedToken>, Vec<u64>) = normalized.into_iter().unzip();
         self.split_normalized_re = (
             regex::RegexSet::new(tokens.iter().map(|t| t.get_pattern(normalizer))).unwrap(),
             ids,
@@ -306,7 +306,7 @@ impl AddedVocabulary {
         &self,
         sentence: NormalizedString,
         split_re: &MatchingSet,
-    ) -> Vec<(NormalizedString, Option<u32>)> {
+    ) -> Vec<(NormalizedString, Option<u64>)> {
         let mut matches = split_re
             .0
             .matches(sentence.get())
@@ -414,13 +414,13 @@ impl AddedVocabulary {
     /// input sentence `I read a book Yesterday`, if the normalizer is supposed to lowercase
     /// everything, we expect a match.
     ///
-    /// This method returns a `Vec` of `(NormalizedString, Option<u32>)`, where the optional `u32`
+    /// This method returns a `Vec` of `(NormalizedString, Option<u64>)`, where the optional `u64`
     /// contains the relevant ID if this is an additional token.
     pub fn extract_and_normalize(
         &self,
         normalizer: Option<&dyn Normalizer>,
         sentence: &str,
-    ) -> Vec<(NormalizedString, Option<u32>)> {
+    ) -> Vec<(NormalizedString, Option<u64>)> {
         // 1. We extract all the non-normalized tokens from the non-normalized string
         let pieces = self.extract(NormalizedString::from(sentence), &self.split_re);
 
@@ -445,7 +445,7 @@ impl AddedVocabulary {
 #[derive(Debug, Serialize, Deserialize)]
 pub(super) struct AddedTokenWithId {
     /// The id assigned to this token
-    pub id: u32,
+    pub id: u64,
     /// Whether this is a special token
     pub special: bool,
 
@@ -489,15 +489,15 @@ mod tests {
 
     #[derive(Serialize, Deserialize)]
     struct ModelMock {
-        vocab: HashMap<String, u32>,
-        vocab_r: HashMap<u32, String>,
+        vocab: HashMap<String, u64>,
+        vocab_r: HashMap<u64, String>,
     }
     impl ModelMock {
         pub fn new<I>(iter: I) -> Self
         where
-            I: IntoIterator<Item = &'static (&'static str, u32)>,
+            I: IntoIterator<Item = &'static (&'static str, u64)>,
         {
-            let vocab: HashMap<String, u32> = iter
+            let vocab: HashMap<String, u64> = iter
                 .into_iter()
                 .map(|&(tok, id)| (tok.to_string(), id))
                 .collect();
@@ -515,13 +515,13 @@ mod tests {
         fn tokenize(&self, _tokens: Vec<(String, Offsets)>) -> Result<Vec<Token>> {
             unimplemented!()
         }
-        fn token_to_id(&self, token: &str) -> Option<u32> {
+        fn token_to_id(&self, token: &str) -> Option<u64> {
             self.vocab.get(token).copied()
         }
-        fn id_to_token(&self, id: u32) -> Option<&str> {
+        fn id_to_token(&self, id: u64) -> Option<&str> {
             self.vocab_r.get(&id).map(String::as_ref)
         }
-        fn get_vocab(&self) -> &HashMap<String, u32> {
+        fn get_vocab(&self) -> &HashMap<String, u64> {
             &self.vocab
         }
         fn get_vocab_size(&self) -> usize {

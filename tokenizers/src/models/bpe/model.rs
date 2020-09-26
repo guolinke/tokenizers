@@ -11,16 +11,16 @@ use std::{
     path::{Path, PathBuf},
 };
 
-type Vocab = HashMap<String, u32>;
-type VocabR = HashMap<u32, String>;
-type Merges = HashMap<Pair, (u32, u32)>;
+type Vocab = HashMap<String, u64>;
+type VocabR = HashMap<u64, String>;
+type Merges = HashMap<Pair, (u64, u64)>;
 
 struct Config {
     files: Option<(String, String)>,
     vocab: Vocab,
     merges: Merges,
     cache_capacity: usize,
-    dropout: Option<f32>,
+    dropout: Option<f64>,
     unk_token: Option<String>,
     continuing_subword_prefix: Option<String>,
     end_of_word_suffix: Option<String>,
@@ -74,7 +74,7 @@ impl BpeBuilder {
     }
 
     /// Use [dropout](https://arxiv.org/abs/1910.13267) with the model.
-    pub fn dropout(mut self, dropout: f32) -> Self {
+    pub fn dropout(mut self, dropout: f64) -> Self {
         self.config.dropout = Some(dropout);
         self
     }
@@ -150,7 +150,7 @@ pub struct BPE {
     cache: Option<Cache<String, Word>>,
     /// Dropout probability for merges. 0 = no dropout is the default. At 1.0, tokenization will
     /// perform no merges, so the result will just be characters.
-    pub(super) dropout: Option<f32>,
+    pub(super) dropout: Option<f64>,
     /// The unknown token to be used when we encounter an unknown char
     pub(super) unk_token: Option<String>,
     /// An optional prefix to use on any subword that exist only behind another one
@@ -223,7 +223,7 @@ pub(crate) fn convert_merges_to_hashmap<I: Iterator<Item = String>>(
             .get(&new_token)
             .ok_or(Error::MergeTokenOutOfVocabulary(new_token))?;
 
-        merges.insert(pair, (rank as u32, *new_id));
+        merges.insert(pair, (rank as u64, *new_id));
     }
 
     Ok(merges)
@@ -262,7 +262,7 @@ impl BPE {
             Value::Object(m) => {
                 for (token, id) in m {
                     if let Value::Number(id) = id {
-                        let id = id.as_u64().ok_or(Error::BadVocabulary)? as u32;
+                        let id = id.as_u64().ok_or(Error::BadVocabulary)? as u64;
                         vocab.insert(token, id);
                     }
                 }
@@ -334,7 +334,7 @@ impl BPE {
 
     fn word_to_tokens<'a, 'b: 'a>(
         &'a self,
-        index: u32,
+        index: u64,
         word: &'b Word,
         initial_offsets: (usize, usize),
     ) -> impl Iterator<Item = Token> + 'a {
@@ -360,10 +360,10 @@ impl BPE {
         let mut encoded: Vec<Token> = Vec::with_capacity(sentence.len());
         for (i, ((w, initial_offsets), maybe_hit)) in sentence.into_iter().zip(cached).enumerate() {
             if let Some(hit) = maybe_hit {
-                encoded.extend(self.word_to_tokens(i as u32, &hit, initial_offsets));
+                encoded.extend(self.word_to_tokens(i as u64, &hit, initial_offsets));
             } else {
                 let word = self.merge_word(&w)?;
-                encoded.extend(self.word_to_tokens(i as u32, &word, initial_offsets));
+                encoded.extend(self.word_to_tokens(i as u64, &word, initial_offsets));
                 misses.push((w, word));
             }
         }
@@ -376,7 +376,7 @@ impl BPE {
 
 #[typetag::serde]
 impl Model for BPE {
-    fn get_vocab(&self) -> &HashMap<String, u32> {
+    fn get_vocab(&self) -> &HashMap<String, u64> {
         &self.vocab
     }
 
@@ -402,17 +402,17 @@ impl Model for BPE {
 
         for (i, (w, initial_offsets)) in sentence.into_iter().enumerate() {
             let word = self.merge_word(&w)?;
-            encoded.extend(self.word_to_tokens(i as u32, &word, initial_offsets));
+            encoded.extend(self.word_to_tokens(i as u64, &word, initial_offsets));
         }
 
         Ok(encoded)
     }
 
-    fn token_to_id(&self, token: &str) -> Option<u32> {
+    fn token_to_id(&self, token: &str) -> Option<u64> {
         self.vocab.get(token).copied()
     }
 
-    fn id_to_token(&self, id: u32) -> Option<&str> {
+    fn id_to_token(&self, id: u64) -> Option<&str> {
         self.vocab_r.get(&id).map(String::as_ref)
     }
 
@@ -441,7 +441,7 @@ impl Model for BPE {
             .iter()
             .collect();
         let mut merges_file = File::create(&merges_path)?;
-        let mut merges: Vec<(&Pair, &u32)> = self
+        let mut merges: Vec<(&Pair, &u64)> = self
             .merges
             .iter()
             .map(|(pair, (rank, _))| (pair, rank))
@@ -510,14 +510,14 @@ mod tests {
         .cloned()
         .collect();
         let merges: Merges = [
-            ((vocab["r"], vocab["e"]), (1u32, vocab["re"])), // 'r-e' -> 're'
-            ((vocab["a"], vocab["t"]), (2u32, vocab["at"])), // 'a-t' -> 'at'
-            ((vocab["e"], vocab["d"]), (3u32, vocab["ed"])), // 'e-d' -> 'ed'
-            ((vocab["u"], vocab["n"]), (4u32, vocab["un"])), // 'u-n' -> 'un'
-            ((vocab["at"], vocab["ed"]), (5u32, vocab["ated"])), // 'at-ed' -> 'ated'
-            ((vocab["re"], vocab["l"]), (6u32, vocab["rel"])), // 're-l' -> 'rel'
-            ((vocab["rel"], vocab["ated"]), (7u32, vocab["related"])), // 'rel-ated' -> 'related'
-            ((vocab["un"], vocab["related"]), (8u32, vocab["unrelated"])), // 'un-related' -> 'unrelated'
+            ((vocab["r"], vocab["e"]), (1u64, vocab["re"])), // 'r-e' -> 're'
+            ((vocab["a"], vocab["t"]), (2u64, vocab["at"])), // 'a-t' -> 'at'
+            ((vocab["e"], vocab["d"]), (3u64, vocab["ed"])), // 'e-d' -> 'ed'
+            ((vocab["u"], vocab["n"]), (4u64, vocab["un"])), // 'u-n' -> 'un'
+            ((vocab["at"], vocab["ed"]), (5u64, vocab["ated"])), // 'at-ed' -> 'ated'
+            ((vocab["re"], vocab["l"]), (6u64, vocab["rel"])), // 're-l' -> 'rel'
+            ((vocab["rel"], vocab["ated"]), (7u64, vocab["related"])), // 'rel-ated' -> 'related'
+            ((vocab["un"], vocab["related"]), (8u64, vocab["unrelated"])), // 'un-related' -> 'unrelated'
         ]
         .iter()
         .cloned()
@@ -530,7 +530,7 @@ mod tests {
         let tokens = bpe.tokenize(sentence.clone()).unwrap();
         assert_eq!(
             tokens,
-            vec![Token::new(15u32, "unrelated".into(), (0, 9), 0)]
+            vec![Token::new(15u64, "unrelated".into(), (0, 9), 0)]
         );
 
         // Now set dropout to 1.0. Result should be no merges performed.
@@ -539,15 +539,15 @@ mod tests {
         assert_eq!(
             tokens,
             vec![
-                Token::new(0u32, "u".into(), (0, 1), 0),
-                Token::new(1u32, "n".into(), (1, 2), 0),
-                Token::new(2u32, "r".into(), (2, 3), 0),
-                Token::new(3u32, "e".into(), (3, 4), 0),
-                Token::new(4u32, "l".into(), (4, 5), 0),
-                Token::new(5u32, "a".into(), (5, 6), 0),
-                Token::new(6u32, "t".into(), (6, 7), 0),
-                Token::new(3u32, "e".into(), (7, 8), 0),
-                Token::new(7u32, "d".into(), (8, 9), 0),
+                Token::new(0u64, "u".into(), (0, 1), 0),
+                Token::new(1u64, "n".into(), (1, 2), 0),
+                Token::new(2u64, "r".into(), (2, 3), 0),
+                Token::new(3u64, "e".into(), (3, 4), 0),
+                Token::new(4u64, "l".into(), (4, 5), 0),
+                Token::new(5u64, "a".into(), (5, 6), 0),
+                Token::new(6u64, "t".into(), (6, 7), 0),
+                Token::new(3u64, "e".into(), (7, 8), 0),
+                Token::new(7u64, "d".into(), (8, 9), 0),
             ]
         );
 
@@ -578,13 +578,13 @@ mod tests {
         let bpe = builder.build().unwrap();
 
         // Check merges.
-        assert_eq!(bpe.merges.get(&(0, 1)).unwrap(), &(0u32, 3u32));
+        assert_eq!(bpe.merges.get(&(0, 1)).unwrap(), &(0u64, 3u64));
 
         // Check vocab.
-        assert_eq!(bpe.vocab.get("a").unwrap(), &0u32);
-        assert_eq!(bpe.vocab.get("b").unwrap(), &1u32);
-        assert_eq!(bpe.vocab.get("c").unwrap(), &2u32);
-        assert_eq!(bpe.vocab.get("ab").unwrap(), &3u32);
+        assert_eq!(bpe.vocab.get("a").unwrap(), &0u64);
+        assert_eq!(bpe.vocab.get("b").unwrap(), &1u64);
+        assert_eq!(bpe.vocab.get("c").unwrap(), &2u64);
+        assert_eq!(bpe.vocab.get("ab").unwrap(), &3u64);
     }
 
     #[test]

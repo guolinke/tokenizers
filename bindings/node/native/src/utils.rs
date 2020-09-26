@@ -10,16 +10,16 @@ fn slice(mut cx: FunctionContext) -> JsResult<JsString> {
     let s = cx.extract::<String>(0)?;
     let len = s.chars().count();
 
-    let get_index = |x: i32| -> usize {
+    let get_index = |x: i64| -> usize {
         if x >= 0 {
             x as usize
         } else {
-            (len as i32 + x) as usize
+            (len as i64 + x) as usize
         }
     };
 
-    let begin_index = get_index(cx.extract_opt::<i32>(1)?.unwrap_or(0));
-    let end_index = get_index(cx.extract_opt::<i32>(2)?.unwrap_or(len as i32));
+    let begin_index = get_index(cx.extract_opt::<i64>(1)?.unwrap_or(0));
+    let end_index = get_index(cx.extract_opt::<i64>(2)?.unwrap_or(len as i64));
 
     if let Some(slice) = tk::tokenizer::get_range_of(&s, begin_index..end_index) {
         Ok(cx.string(slice))

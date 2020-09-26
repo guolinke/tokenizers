@@ -83,7 +83,7 @@ impl Task for EncodeTask {
                 Ok(js_encoding.upcast())
             }
             EncodeOutput::Batch(encodings) => {
-                let result = JsArray::new(&mut cx, encodings.len() as u32);
+                let result = JsArray::new(&mut cx, encodings.len() as u64);
                 for (i, encoding) in encodings.into_iter().enumerate() {
                     let mut js_encoding = JsEncoding::new::<_, JsEncoding, _>(&mut cx, vec![])?;
 
@@ -94,7 +94,7 @@ impl Task for EncodeTask {
                         .encoding
                         .make_owned(Box::new(encoding));
 
-                    result.set(&mut cx, i as u32, js_encoding)?;
+                    result.set(&mut cx, i as u64, js_encoding)?;
                 }
                 Ok(result.upcast())
             }
@@ -103,8 +103,8 @@ impl Task for EncodeTask {
 }
 
 pub enum DecodeTask {
-    Single(WorkingTokenizer, Vec<u32>, bool),
-    Batch(WorkingTokenizer, Vec<Vec<u32>>, bool),
+    Single(WorkingTokenizer, Vec<u64>, bool),
+    Batch(WorkingTokenizer, Vec<Vec<u64>>, bool),
 }
 
 pub enum DecodeOutput {
@@ -144,10 +144,10 @@ impl Task for DecodeTask {
         match result.map_err(|e| cx.throw_error::<_, ()>(e).unwrap_err())? {
             DecodeOutput::Single(string) => Ok(cx.string(string).upcast()),
             DecodeOutput::Batch(strings) => {
-                let result = JsArray::new(&mut cx, strings.len() as u32);
+                let result = JsArray::new(&mut cx, strings.len() as u64);
                 for (i, string) in strings.into_iter().enumerate() {
                     let js_string = cx.string(string);
-                    result.set(&mut cx, i as u32, js_string)?;
+                    result.set(&mut cx, i as u64, js_string)?;
                 }
                 Ok(result.upcast())
             }

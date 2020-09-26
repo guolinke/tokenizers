@@ -57,9 +57,9 @@ pub trait PreTokenizer: Send + Sync {
 /// Represents a model used during Tokenization (like BPE or Word or Unigram).
 pub trait Model: Send + Sync {
     fn tokenize(&self, tokens: Vec<(String, Offsets)>) -> Result<Vec<Token>>;
-    fn token_to_id(&self, token: &str) -> Option<u32>;
-    fn id_to_token(&self, id: u32) -> Option<&str>;
-    fn get_vocab(&self) -> &HashMap<String, u32>;
+    fn token_to_id(&self, token: &str) -> Option<u64>;
+    fn id_to_token(&self, id: u64) -> Option<&str>;
+    fn get_vocab(&self) -> &HashMap<String, u64>;
     fn get_vocab_size(&self) -> usize;
     fn save(&self, folder: &Path, name: Option<&str>) -> Result<Vec<PathBuf>>;
 }
@@ -107,20 +107,20 @@ pub trait Trainer: Sync {
     fn should_show_progress(&self) -> bool;
     /// The actual training method. This will return a new trained Model as well as a list
     /// of `special_tokens` to be added directly to the tokenizer along with the model.
-    fn train(&self, words: HashMap<String, u32>) -> Result<(Box<dyn Model>, Vec<AddedToken>)>;
+    fn train(&self, words: HashMap<String, u64>) -> Result<(Box<dyn Model>, Vec<AddedToken>)>;
     /// Process a bunch of token, counting them as relevant.
-    fn process_tokens(&self, words: &mut HashMap<String, u32>, tokens: Vec<String>);
+    fn process_tokens(&self, words: &mut HashMap<String, u64>, tokens: Vec<String>);
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    pub id: u32,
+    pub id: u64,
     pub value: String,
     pub offsets: (usize, usize),
-    pub word: u32,
+    pub word: u64,
 }
 impl Token {
-    pub fn new(id: u32, value: String, offsets: (usize, usize), word: u32) -> Self {
+    pub fn new(id: u64, value: String, offsets: (usize, usize), word: u64) -> Self {
         Token {
             id,
             value,
@@ -345,7 +345,7 @@ impl Tokenizer {
     }
 
     /// Get the vocabulary
-    pub fn get_vocab(&self, with_added_tokens: bool) -> HashMap<String, u32> {
+    pub fn get_vocab(&self, with_added_tokens: bool) -> HashMap<String, u64> {
         let mut final_vocab = self.model.get_vocab().clone();
 
         if with_added_tokens {
@@ -372,13 +372,13 @@ impl Tokenizer {
     }
 
     /// Converts a token in the corresponding id.
-    pub fn token_to_id(&self, token: &str) -> Option<u32> {
+    pub fn token_to_id(&self, token: &str) -> Option<u64> {
         self.added_vocabulary
             .token_to_id(token, self.model.as_ref())
     }
 
     /// Converts an id to the corresponding token.
-    pub fn id_to_token(&self, id: u32) -> Option<&str> {
+    pub fn id_to_token(&self, id: u64) -> Option<&str> {
         self.added_vocabulary.id_to_token(id, self.model.as_ref())
     }
 
@@ -408,7 +408,7 @@ impl Tokenizer {
     }
 
     /// Encode a single sequence
-    fn encode_single_sequence(&self, sequence: InputSequence, type_id: u32) -> Result<Encoding> {
+    fn encode_single_sequence(&self, sequence: InputSequence, type_id: u64) -> Result<Encoding> {
         let (sequence, pre_tokenized) = match sequence {
             InputSequence::PreTokenized(seq) => (seq, true),
             InputSequence::Raw(seq) => (vec![seq], false),
@@ -546,7 +546,7 @@ impl Tokenizer {
     }
 
     /// Decode the given ids, back to a String
-    pub fn decode(&self, ids: Vec<u32>, skip_special_tokens: bool) -> Result<String> {
+    pub fn decode(&self, ids: Vec<u64>, skip_special_tokens: bool) -> Result<String> {
         let tokens = ids
             .into_iter()
             .filter_map(|id| {
@@ -569,7 +569,7 @@ impl Tokenizer {
     /// Decode all sentences in parallel
     pub fn decode_batch(
         &self,
-        sentences: Vec<Vec<u32>>,
+        sentences: Vec<Vec<u64>>,
         skip_special_tokens: bool,
     ) -> Result<Vec<String>> {
         sentences
@@ -584,7 +584,7 @@ impl Tokenizer {
         &mut self,
         trainer: &Box<dyn Trainer>,
         files: Vec<String>,
-    ) -> Result<HashMap<String, u32>> {
+    ) -> Result<HashMap<String, u64>> {
         let max_read = 1_000_000;
         let len: u64 = files
             .iter()
@@ -605,7 +605,7 @@ impl Tokenizer {
         };
         let words = files
             .into_iter()
-            .map(|filename| -> Result<HashMap<String, u32>> {
+            .map(|filename| -> Result<HashMap<String, u64>> {
                 let file = File::open(filename)?;
                 let file = BufReader::with_capacity(max_read, file);
                 // We read new lines using this API instead of the Lines Iterator
@@ -615,7 +615,7 @@ impl Tokenizer {
                     .maybe_par_bridge()
                     .map_with(
                         &progress,
-                        |progress, line| -> Result<HashMap<String, u32>> {
+                        |progress, line| -> Result<HashMap<String, u64>> {
                             let newline = line?;
                             let mut words = HashMap::new();
                             let mut normalized =
@@ -646,7 +646,7 @@ impl Tokenizer {
             })
             .try_fold(
                 HashMap::new(),
-                |mut acc, ws| -> Result<HashMap<String, u32>> {
+                |mut acc, ws| -> Result<HashMap<String, u64>> {
                     for (k, v) in ws? {
                         acc.entry(k).and_modify(|c| *c += v).or_insert(v);
                     }

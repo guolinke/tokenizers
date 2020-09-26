@@ -33,8 +33,8 @@ impl fmt::Display for Error {
     }
 }
 
-type Vocab = HashMap<String, u32>;
-type VocabR = HashMap<u32, String>;
+type Vocab = HashMap<String, u64>;
+type VocabR = HashMap<u64, String>;
 
 struct Config {
     files: Option<String>,
@@ -171,7 +171,7 @@ impl WordPiece {
         let mut vocab = HashMap::new();
         for (index, line) in file.lines().enumerate() {
             let line = line?;
-            vocab.insert(line.trim_end().to_owned(), index as u32);
+            vocab.insert(line.trim_end().to_owned(), index as u64);
         }
 
         Ok(vocab)
@@ -200,7 +200,7 @@ impl WordPiece {
 
 #[typetag::serde]
 impl Model for WordPiece {
-    fn get_vocab(&self) -> &HashMap<String, u32> {
+    fn get_vocab(&self) -> &HashMap<String, u64> {
         &self.vocab
     }
 
@@ -221,7 +221,7 @@ impl Model for WordPiece {
                         .get(&self.unk_token)
                         .ok_or(Error::MissingUnkToken)?,
                     offsets: initial_offsets,
-                    word: index as u32,
+                    word: index as u64,
                 });
                 continue;
             }
@@ -245,7 +245,7 @@ impl Model for WordPiece {
                             id: self.vocab[&substr],
                             value: substr,
                             offsets: (initial_offsets.0 + start, initial_offsets.0 + end),
-                            word: index as u32,
+                            word: index as u64,
                         });
                         break;
                     }
@@ -269,7 +269,7 @@ impl Model for WordPiece {
                         .get(&self.unk_token)
                         .ok_or(Error::MissingUnkToken)?,
                     offsets: initial_offsets,
-                    word: index as u32,
+                    word: index as u64,
                 });
             } else {
                 output_tokens.extend(sub_tokens);
@@ -279,11 +279,11 @@ impl Model for WordPiece {
         Ok(output_tokens)
     }
 
-    fn token_to_id(&self, token: &str) -> Option<u32> {
+    fn token_to_id(&self, token: &str) -> Option<u64> {
         self.vocab.get(token).copied()
     }
 
-    fn id_to_token(&self, id: u32) -> Option<&str> {
+    fn id_to_token(&self, id: u64) -> Option<&str> {
         self.vocab_r.get(&id).map(String::as_ref)
     }
 
@@ -298,7 +298,7 @@ impl Model for WordPiece {
             .iter()
             .collect();
         let mut vocab_file = File::create(&vocab_path)?;
-        let mut vocab: Vec<(&String, &u32)> = self.vocab.iter().collect();
+        let mut vocab: Vec<(&String, &u64)> = self.vocab.iter().collect();
         vocab.sort_unstable_by_key(|k| *k.1);
         vocab_file.write_all(
             &vocab

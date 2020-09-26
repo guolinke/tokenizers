@@ -135,7 +135,7 @@ impl Model {
     }
 
     #[args(type_id = 0)]
-    fn encode(&self, sequence: EncodeInput, type_id: u32) -> PyResult<Encoding> {
+    fn encode(&self, sequence: EncodeInput, type_id: u64) -> PyResult<Encoding> {
         let sequence = sequence.into_input();
 
         if sequence.is_empty() {
@@ -151,7 +151,7 @@ impl Model {
     }
 
     #[args(type_id = 0)]
-    fn encode_batch(&self, sequences: Vec<EncodeInput>, type_id: u32) -> PyResult<Vec<Encoding>> {
+    fn encode_batch(&self, sequences: Vec<EncodeInput>, type_id: u64) -> PyResult<Vec<Encoding>> {
         ToPyResult(self.model.execute(|model| {
             sequences
                 .into_maybe_par_iter()

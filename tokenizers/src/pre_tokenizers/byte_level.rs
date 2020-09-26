@@ -12,20 +12,20 @@ fn bytes_char() -> HashMap<u8, char> {
     bs.extend(b'\xA1'..=b'\xAC');
     bs.extend(b'\xAE'..=b'\xFF');
 
-    let mut cs: Vec<u32> = bs.iter().map(|i| *i as u32).collect();
+    let mut cs: Vec<u64> = bs.iter().map(|i| *i as u64).collect();
     let mut n = 0;
 
     for b in 0..=255u8 {
         if !bs.contains(&b) {
             bs.push(b);
-            cs.push(u32::pow(2, 8) + n);
+            cs.push(u64::pow(2, 8) + n);
             n += 1;
         }
     }
 
     bs.into_iter()
         .zip(cs)
-        .map(|(f, t)| (f, unsafe { std::char::from_u32_unchecked(t) }))
+        .map(|(f, t)| (f, unsafe { std::char::from_u64_unchecked(t) }))
         .collect()
 }
 

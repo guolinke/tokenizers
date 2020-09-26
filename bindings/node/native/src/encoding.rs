@@ -123,7 +123,7 @@ declare_types! {
             let overflowings = this.borrow(&guard).encoding.execute(|encoding| {
                 encoding.unwrap().get_overflowing().clone()
             });
-            let js_overflowings = JsArray::new(&mut cx, overflowings.len() as u32);
+            let js_overflowings = JsArray::new(&mut cx, overflowings.len() as u64);
 
             for (index, overflowing) in overflowings.iter().enumerate() {
                 let mut js_overflowing = JsEncoding::new::<_, JsEncoding, _>(&mut cx, vec![])?;
@@ -132,7 +132,7 @@ declare_types! {
                 let guard = cx.lock();
                 js_overflowing.borrow_mut(&guard).encoding.make_owned(Box::new(overflowing.clone()));
 
-                js_overflowings.set(&mut cx, index as u32, js_overflowing)?;
+                js_overflowings.set(&mut cx, index as u64, js_overflowing)?;
             }
 
             Ok(js_overflowings.upcast())
@@ -141,7 +141,7 @@ declare_types! {
         method wordToTokens(mut cx) {
             // wordToTokens(word: number): [number, number] | undefined
 
-            let word = cx.extract::<u32>(0)?;
+            let word = cx.extract::<u64>(0)?;
 
             let this = cx.this();
             let guard = cx.lock();
@@ -160,7 +160,7 @@ declare_types! {
         method wordToChars(mut cx) {
             // wordToChars(word: number): [number, number] | undefined
 
-            let word = cx.argument::<JsNumber>(0)?.value() as u32;
+            let word = cx.argument::<JsNumber>(0)?.value() as u64;
 
             let this = cx.this();
             let guard = cx.lock();

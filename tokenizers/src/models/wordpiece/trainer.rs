@@ -24,7 +24,7 @@ impl WordPieceTrainerBuilder {
     }
 
     /// Set the expected minimum frequency
-    pub fn min_frequency(mut self, frequency: u32) -> Self {
+    pub fn min_frequency(mut self, frequency: u64) -> Self {
         self.bpe_trainer_builder = self.bpe_trainer_builder.min_frequency(frequency);
         self
     }
@@ -89,7 +89,7 @@ impl WordPieceTrainer {
         WordPieceTrainerBuilder::default()
     }
 
-    pub fn train(&self, word_counts: HashMap<String, u32>) -> Result<(WordPiece, Vec<AddedToken>)> {
+    pub fn train(&self, word_counts: HashMap<String, u64>) -> Result<(WordPiece, Vec<AddedToken>)> {
         let (bpe, tokens) = self.bpe_trainer.train(word_counts)?;
         Ok((WordPiece::from_bpe(&bpe), tokens))
     }
@@ -98,13 +98,13 @@ impl WordPieceTrainer {
 impl Trainer for WordPieceTrainer {
     fn train(
         &self,
-        word_counts: HashMap<String, u32>,
+        word_counts: HashMap<String, u64>,
     ) -> Result<(Box<dyn Model>, Vec<AddedToken>)> {
         let (wp, tokens) = self.train(word_counts)?;
         Ok((Box::new(wp), tokens))
     }
 
-    fn process_tokens(&self, mut words: &mut HashMap<String, u32>, tokens: Vec<String>) {
+    fn process_tokens(&self, mut words: &mut HashMap<String, u64>, tokens: Vec<String>) {
         self.bpe_trainer.process_tokens(&mut words, tokens)
     }
 

@@ -16,7 +16,7 @@ impl Token {
 #[pymethods]
 impl Token {
     #[getter]
-    fn get_id(&self) -> PyResult<u32> {
+    fn get_id(&self) -> PyResult<u64> {
         Ok(self.tok.id)
     }
 
@@ -30,7 +30,7 @@ impl Token {
         Ok(self.tok.offsets)
     }
 
-    fn as_tuple(&self) -> PyResult<(u32, &str, (usize, usize))> {
+    fn as_tuple(&self) -> PyResult<(u64, &str, (usize, usize))> {
         Ok((self.tok.id, &self.tok.value, self.tok.offsets))
     }
 }
