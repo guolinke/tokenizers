@@ -237,7 +237,7 @@ pub(crate) fn convert_merges_to_hashmap<I: Iterator<Item = String>>(
             .get(&new_token)
             .ok_or(Error::MergeTokenOutOfVocabulary(new_token))?;
 
-        merges.insert(pair, (rank as u32, *new_id));
+        merges.insert(pair, (rank as u64, *new_id));
     }
 
     Ok(merges)

@@ -556,7 +556,7 @@ impl BpeTrainer {
             merges
                 .into_iter()
                 .enumerate()
-                .map(|(index, (pair, new_id))| (pair, (index as u32, new_id)))
+                .map(|(index, (pair, new_id))| (pair, (index as u64, new_id)))
                 .collect(),
         );
         if let Some(prefix) = &self.continuing_subword_prefix {
