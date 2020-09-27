@@ -306,7 +306,14 @@ impl BpeTrainer {
         let mut counts: Vec<u64> = Vec::with_capacity(wc.len());
 
         for (word, count) in wc {
-            if self.special_tokens.contains(AddedToken(&word)) {
+            let mut is_sp = false;
+            for token in &self.special_tokens {
+                if ($token.content == &word) {
+                    is_sp = true;
+                    break;
+                }
+            }
+            if (is_sp) {
                 continue;
             }
             let mut current_word = Word::new();
