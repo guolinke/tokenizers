@@ -308,12 +308,12 @@ impl BpeTrainer {
         for (word, count) in wc {
             let mut is_sp = false;
             for token in &self.special_tokens {
-                if ($token.content == &word) {
+                if $token.content == &word {
                     is_sp = true;
                     break;
                 }
             }
-            if (is_sp) {
+            if is_sp {
                 continue;
             }
             let mut current_word = Word::new();
