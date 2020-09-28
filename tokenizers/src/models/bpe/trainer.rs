@@ -245,6 +245,16 @@ impl BpeTrainer {
         // Compute the alphabet from seen words
         let mut alphabet: HashMap<char, usize> = HashMap::new();
         for (word, count) in wc {
+            let mut is_sp = false;
+            for token in &self.special_tokens {
+                if &token.content == word {
+                    is_sp = true;
+                    break;
+                }
+            }
+            if is_sp {
+                continue;
+            }
             for c in word.chars() {
                 alphabet
                     .entry(c)
