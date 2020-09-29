@@ -1,4 +1,4 @@
-__version__ = "0.9.0.dev1"
+__version__ = "0.9.0.dev4"
 
 from typing import Tuple, Union, Tuple, List
 from enum import Enum
@@ -9,7 +9,8 @@ TextInputSequence = str
 PreTokenizedInputSequence = Union[List[str], Tuple[str]]
 TextEncodeInput = Union[TextInputSequence, Tuple[TextInputSequence, TextInputSequence]]
 PreTokenizedEncodeInput = Union[
-    PreTokenizedInputSequence, Tuple[PreTokenizedInputSequence, PreTokenizedInputSequence],
+    PreTokenizedInputSequence,
+    Tuple[PreTokenizedInputSequence, PreTokenizedInputSequence],
 ]
 
 InputSequence = Union[TextInputSequence, PreTokenizedInputSequence]
