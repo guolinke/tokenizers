@@ -145,7 +145,7 @@ impl BpeBuilder {
             .merges
             .into_iter()
             .enumerate()
-            .map(|(i, (a, b))| -> Result<(Pair, (u32, u32))> {
+            .map(|(i, (a, b))| -> Result<(Pair, (u64, u64))> {
                 let a_id = vocab
                     .get(&a)
                     .ok_or_else(|| Error::MergeTokenOutOfVocabulary(a.to_owned()))?;
@@ -156,7 +156,7 @@ impl BpeBuilder {
                 let new_id = vocab
                     .get(&new_token)
                     .ok_or(Error::MergeTokenOutOfVocabulary(new_token))?;
-                Ok(((*a_id, *b_id), (i as u32, *new_id)))
+                Ok(((*a_id, *b_id), (i as u64, *new_id)))
             })
             .collect::<Result<MergeMap>>()?;
 
